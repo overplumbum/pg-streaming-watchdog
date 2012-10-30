@@ -1,0 +1,11 @@
+Source: pg-streaming-watchdog
+Priority: extra
+Maintainer: Denis Orlikhin <denis@ostrovok.ru>
+Build-depends: debhelper (>=8)
+Homepage: http://habrahabr.ru/post/130704/
+
+Package: pg-streaming-watchdog
+Architecture: any
+Depends: ${misc:Depends}, python (>=2.7), postgresql-common
+Description: Trick to keep pg_xlog files from premature archiving
+ metapackage

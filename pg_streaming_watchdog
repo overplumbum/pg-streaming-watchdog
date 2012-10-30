@@ -1,0 +1,160 @@
+#!/usr/bin/env python
+import ConfigParser
+import argparse
+import logging
+import os
+import shutil
+import socket
+import subprocess
+import sys
+
+
+ARGS = None
+CONFIG = None
+
+
+def setup():
+    global ARGS, CONFIG
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--verbose', action='store_true')
+    parser.add_argument('--archived-name', required=True)
+    parser.add_argument('--file', required=True)
+    parser.add_argument('--config', default='/etc/pg_streaming_watchdog.ini')
+
+    ARGS = parser.parse_args()
+
+    CONFIG = ConfigParser.ConfigParser(allow_no_value=True)
+    CONFIG.readfp(open(ARGS.config))
+
+    format = '%(asctime)s %(levelname)s %(message)s'
+    level = logging.DEBUG if ARGS.verbose else logging.INFO
+    logging.basicConfig(filename=CONFIG.get('config', 'log_file'), level=level, format=format)
+
+
+def copy():
+    logging.info("OK: %s", ARGS.archived_name)
+    if int(CONFIG.get('config', 'do_not_copy')):
+        logging.debug("fake archiving enabled in config")
+        return 0
+    try:
+        shutil.copyfile(ARGS.file, os.path.join(CONFIG.get('config', 'archive_dir'), ARGS.archived_name))
+    except:
+        logging.exception('copy failed')
+        return 1
+    return 0
+
+
+def get_senders():
+    senders = []
+    pids = [pid for pid in os.listdir('/proc') if pid.isdigit()]
+
+    for pid in pids:
+        login = open(os.path.join('/proc', pid, 'comm'), 'rb').read().rstrip()
+
+        if login != 'postgres':
+            continue
+
+        title = open(os.path.join('/proc', pid, 'cmdline'), 'rb').read().rstrip('\n\r\x00')
+
+        #   0        1           2       3       4        5       6          7
+        # postgres: wal      sender   process postgres [local] streaming 1E/BA000080
+
+        if title.startswith('postgres: wal sender process '):
+            title = title.split(' ')
+            assert title[6] == 'streaming'
+
+            position = title[7]
+            assert len(position) <= len('1E/BA000080'), repr(position)
+
+            # "192.168.1.4(21862)" or "[local]"
+            remote = title[5]
+            remote = remote.strip('[]')
+            remote = remote.split('(')[0]
+
+            senders.append((position, remote))
+
+    return senders
+
+
+def is_delivered_freaky(minimal_position, filename):
+    """
+    Mysterious transforms similar to http://habrahabr.ru/post/130704/
+    """
+    minimal_position = minimal_position.replace('/', '', 1)
+    assert minimal_position[-6:].isalnum()
+    minimal_position = minimal_position[:-6]
+    minimal_position_unhex = int(minimal_position, 16)
+
+    logging.debug("min pos: %s (%s)", minimal_position, minimal_position_unhex)
+
+    assert filename[:13].isalnum()
+    filename = filename[13:]
+    filename = filename.replace('000000', '', 1)
+
+    filename_unhex = int(filename, 16)
+    logging.debug('filename: %s (%s)', filename, filename_unhex)
+
+    return minimal_position_unhex > filename_unhex
+
+
+def is_delivered_psql(minimal_position, filename):
+    assert minimal_position.replace('/', '', 1).isalnum()
+    assert filename.isalnum()
+    minimal_filename = subprocess.check_output([
+        'psql',
+        'postgres',
+        '-tqAc',
+        "select pg_xlogfile_name('{}')".format(minimal_position)
+    ]).rstrip()
+    logging.debug('worst sender @ %s', minimal_filename)
+
+    assert len(minimal_filename) == len(filename)
+    return minimal_filename > filename
+
+
+def main():
+    global ARGS, CONFIG
+
+    if ARGS.archived_name.endswith('.backup'):
+        return copy()
+
+    if not os.path.exists(ARGS.file):
+        logging.warning("no such file %s. Ignoring", ARGS.file);
+        return 0
+
+    connected_slaves = get_senders()
+
+    connected_remotes = set([socket.gethostbyaddr(s[1]) if s[1] != 'local' else 'local' for s in connected_slaves])
+    desired_remotes = [kv[0] for kv in CONFIG.items('slaves')]
+
+    if not len(desired_remotes):
+        return copy()
+
+    missing_remotes = set(desired_remotes) -  connected_remotes
+    if missing_remotes:
+        logging.error('not all slaves are connected: %s', str(list(missing_remotes)))
+        return 1
+
+    extra_remotes = connected_remotes - set(desired_remotes)
+    if extra_remotes:
+        logging.error('unlisted slave detected (update cfg plz): %s', str(list(extra_remotes)))
+        return 1
+
+    minimal_position = min(s[0] for s in connected_slaves)
+    filename = os.path.basename(ARGS.file)
+
+    # is_delivered = is_delivered_freaky(minimal_position, filename)
+    is_delivered = is_delivered_psql(minimal_position, filename)
+
+    if is_delivered:
+        logging.debug('trying to archive %s @ %s', ARGS.archived_name, minimal_position)
+        return copy()
+    else:
+        logging.error('some senders still use this (or previous) file %s', ARGS.archived_name)
+        return 1
+
+
+if __name__ == '__main__':
+    setup()
+    sys.exit(main())
