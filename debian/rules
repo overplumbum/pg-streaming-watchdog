@@ -2,6 +2,7 @@
 
 build::
 	pep8 --repeat pg_streaming_watchdog
+	pyflakes pg_streaming_watchdog
 
 %:
 	dh $@

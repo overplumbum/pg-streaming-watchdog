@@ -27,11 +27,11 @@ def setup():
     CONFIG = ConfigParser.ConfigParser(allow_no_value=True)
     CONFIG.readfp(open(ARGS.config))
 
-    format = '%(asctime)s %(levelname)s %(message)s'
+    log_format = '%(asctime)s %(levelname)s %(message)s'
     level = logging.DEBUG if ARGS.verbose else logging.INFO
     logging.basicConfig(
         filename=CONFIG.get('config', 'log_file'),
-        level=level, format=format)
+        level=level, format=log_format)
 
 
 def copy():
@@ -121,8 +121,6 @@ def is_delivered_psql(minimal_position, filename):
 
 
 def main():
-    global ARGS, CONFIG
-
     if ARGS.archived_name.endswith('.backup'):
         return copy()
 
