@@ -38,6 +38,7 @@ def setup():
 
     logging.basicConfig(**log_args)
 
+
 def copy():
     logging.info("OK: %s", ARGS.archived_name)
     if int(CONFIG.get('config', 'do_not_copy')):
