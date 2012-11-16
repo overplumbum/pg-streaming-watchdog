@@ -178,6 +178,7 @@ def main():
 if __name__ == '__main__':
     setup()
     try:
-        sys.exit(main())
+        ret = main()
     except:
         logging.exception('internal error')
+    sys.exit(ret)
