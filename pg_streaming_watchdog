@@ -27,12 +27,16 @@ def setup():
     CONFIG = ConfigParser.ConfigParser(allow_no_value=True)
     CONFIG.readfp(open(ARGS.config))
 
-    log_format = '%(asctime)s %(levelname)s %(message)s'
-    level = logging.DEBUG if ARGS.verbose else logging.INFO
-    logging.basicConfig(
-        filename=CONFIG.get('config', 'log_file'),
-        level=level, format=log_format)
+    log_args = {
+        'level': logging.DEBUG if ARGS.verbose else logging.INFO,
+        'format': '%(asctime)s %(levelname)s %(message)s',
+    }
+    try:
+        log_args['filename'] = CONFIG.get('config', 'log_file')
+    except ConfigParser.NoOptionError:
+        pass
 
+    logging.basicConfig(**log_args)
 
 def copy():
     logging.info("OK: %s", ARGS.archived_name)
@@ -173,4 +177,7 @@ def main():
 
 if __name__ == '__main__':
     setup()
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except:
+        logging.exception('internal error')
