@@ -76,7 +76,7 @@ def get_senders():
             assert title[6] == 'streaming'
 
             position = title[7]
-            assert len(position) <= len('1E/BA000080'), repr(position)
+            assert len(position) <= len('1E/BA0000800'), repr(position)
 
             # "192.168.1.4(21862)" or "[local]"
             remote = title[5]
