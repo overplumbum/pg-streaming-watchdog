@@ -29,7 +29,9 @@ def setup():
 
     format = '%(asctime)s %(levelname)s %(message)s'
     level = logging.DEBUG if ARGS.verbose else logging.INFO
-    logging.basicConfig(filename=CONFIG.get('config', 'log_file'), level=level, format=format)
+    logging.basicConfig(
+        filename=CONFIG.get('config', 'log_file'),
+        level=level, format=format)
 
 
 def copy():
@@ -38,7 +40,10 @@ def copy():
         logging.debug("fake archiving enabled in config")
         return 0
     try:
-        shutil.copyfile(ARGS.file, os.path.join(CONFIG.get('config', 'archive_dir'), ARGS.archived_name))
+        shutil.copyfile(
+            ARGS.file,
+            os.path.join(CONFIG.get('config', 'archive_dir'),
+            ARGS.archived_name))
     except:
         logging.exception('copy failed')
         return 1
@@ -55,10 +60,12 @@ def get_senders():
         if login != 'postgres':
             continue
 
-        title = open(os.path.join('/proc', pid, 'cmdline'), 'rb').read().rstrip('\n\r\x00')
+        title = open(
+            os.path.join('/proc', pid, 'cmdline'),
+            'rb').read().rstrip('\n\r\x00')
 
-        #   0        1           2       3       4        5       6          7
-        # postgres: wal      sender   process postgres [local] streaming 1E/BA000080
+#   0        1           2       3       4        5       6          7
+# postgres: wal      sender   process postgres [local] streaming 1E/BA000080
 
         if title.startswith('postgres: wal sender process '):
             title = title.split(' ')
@@ -120,25 +127,32 @@ def main():
         return copy()
 
     if not os.path.exists(ARGS.file):
-        logging.warning("no such file %s. Ignoring", ARGS.file);
+        logging.warning("no such file %s. Ignoring", ARGS.file)
         return 0
 
     connected_slaves = get_senders()
 
-    connected_remotes = set([socket.gethostbyaddr(s[1]) if s[1] != 'local' else 'local' for s in connected_slaves])
+    connected_remotes = set([
+        socket.gethostbyaddr(s[1])
+        if s[1] != 'local' else 'local'
+        for s in connected_slaves])
     desired_remotes = [kv[0] for kv in CONFIG.items('slaves')]
 
     if not len(desired_remotes):
         return copy()
 
-    missing_remotes = set(desired_remotes) -  connected_remotes
+    missing_remotes = set(desired_remotes) - connected_remotes
     if missing_remotes:
-        logging.error('not all slaves are connected: %s', str(list(missing_remotes)))
+        logging.error(
+            'not all slaves are connected: %s',
+            str(list(missing_remotes)))
         return 1
 
     extra_remotes = connected_remotes - set(desired_remotes)
     if extra_remotes:
-        logging.error('unlisted slave detected (update cfg plz): %s', str(list(extra_remotes)))
+        logging.error(
+            'unlisted slave detected (update cfg plz): %s',
+            str(list(extra_remotes)))
         return 1
 
     minimal_position = min(s[0] for s in connected_slaves)
@@ -148,10 +162,14 @@ def main():
     is_delivered = is_delivered_psql(minimal_position, filename)
 
     if is_delivered:
-        logging.debug('trying to archive %s @ %s', ARGS.archived_name, minimal_position)
+        logging.debug(
+            'trying to archive %s @ %s',
+            ARGS.archived_name, minimal_position)
         return copy()
     else:
-        logging.error('some senders still use this (or previous) file %s', ARGS.archived_name)
+        logging.error(
+            'some senders still use this (or previous) file %s',
+            ARGS.archived_name)
         return 1
 
 

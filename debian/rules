@@ -1,3 +1,7 @@
 #!/usr/bin/make -f
+
+build::
+	pep8 --repeat pg_streaming_watchdog
+
 %:
 	dh $@

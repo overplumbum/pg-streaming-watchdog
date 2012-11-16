@@ -1,7 +1,7 @@
 Source: pg-streaming-watchdog
 Priority: extra
 Maintainer: Denis Orlikhin <denis@ostrovok.ru>
-Build-depends: debhelper (>=8)
+Build-depends: debhelper (>=8), pep8, pylint, pyflakes
 Homepage: http://habrahabr.ru/post/130704/
 
 Package: pg-streaming-watchdog
