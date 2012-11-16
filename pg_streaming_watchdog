@@ -131,7 +131,7 @@ def main():
     connected_slaves = get_senders()
 
     connected_remotes = set([
-        socket.gethostbyaddr(s[1])
+        socket.gethostbyaddr(s[1])[0]
         if s[1] != 'local' else 'local'
         for s in connected_slaves])
     desired_remotes = [kv[0] for kv in CONFIG.items('slaves')]

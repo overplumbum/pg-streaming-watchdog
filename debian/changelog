@@ -1,3 +1,9 @@
+pg-streaming-watchdog (2) oneiric; urgency=low
+
+  * gethostbyaddr fix
+
+ -- Denis Orlikhin <denis@ostrovok.ru>  Fri, 16 Nov 2012 16:39:15 +0400
+
 pg-streaming-watchdog (1) oneiric; urgency=low
 
   * initial
