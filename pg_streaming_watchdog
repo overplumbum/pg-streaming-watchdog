@@ -59,7 +59,14 @@ def get_senders():
     pids = [pid for pid in os.listdir('/proc') if pid.isdigit()]
 
     for pid in pids:
-        login = open(os.path.join('/proc', pid, 'comm'), 'rb').read().rstrip()
+        try:
+            pid_file = os.path.join('/proc', pid, 'comm')
+            login = open(pid_file, 'rb').read().rstrip()
+        except IOError:
+            # pid exited during processing
+            if os.path.exists(pid_file):
+                raise
+            continue
 
         if login != 'postgres':
             continue
