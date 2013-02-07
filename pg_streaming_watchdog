@@ -48,7 +48,7 @@ def copy():
         shutil.copyfile(
             ARGS.file,
             os.path.join(CONFIG.get('config', 'archive_dir'),
-            ARGS.archived_name))
+                         ARGS.archived_name))
     except:
         logging.exception('copy failed')
         return 1
@@ -118,7 +118,8 @@ def is_delivered_freaky(minimal_position, filename):
 
 
 def is_delivered_psql(minimal_position, filename):
-    assert minimal_position.replace('/', '', 1).isalnum(), repr(minimal_position)
+    assert minimal_position.replace(
+        '/', '', 1).isalnum(), repr(minimal_position)
     assert filename.isalnum(), repr(filename)
     minimal_filename = subprocess.check_output([
         'psql',
@@ -128,7 +129,8 @@ def is_delivered_psql(minimal_position, filename):
     ]).rstrip()
     logging.debug('worst sender @ %s', minimal_filename)
 
-    assert len(minimal_filename) == len(filename), repr([minimal_filename, filename])
+    assert len(
+        minimal_filename) == len(filename), repr([minimal_filename, filename])
     return minimal_filename > filename
 
 
