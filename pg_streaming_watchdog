@@ -81,7 +81,7 @@ def get_senders():
 
         if title.startswith('postgres: wal sender process '):
             title = title.split(' ')
-            assert title[6] == 'streaming'
+            assert title[6] == 'streaming', repr(title)
 
             position = title[7]
             assert len(position) <= len('1E/BA0000800'), repr(position)
@@ -101,25 +101,25 @@ def is_delivered_freaky(minimal_position, filename):
     Mysterious transforms similar to http://habrahabr.ru/post/130704/
     """
     minimal_position = minimal_position.replace('/', '', 1)
-    assert minimal_position[-6:].isalnum()
+    assert minimal_position[-6:].isalnum(), repr(minimal_position)
     minimal_position = minimal_position[:-6]
     minimal_position_unhex = int(minimal_position, 16)
 
     logging.debug("min pos: %s (%s)", minimal_position, minimal_position_unhex)
 
-    assert filename[:13].isalnum()
+    assert filename[:13].isalnum(), repr(filename)
     filename = filename[13:]
     filename = filename.replace('000000', '', 1)
 
     filename_unhex = int(filename, 16)
     logging.debug('filename: %s (%s)', filename, filename_unhex)
 
-    return minimal_position_unhex > filename_unhex
+    return minimal_position_unhex > filename_unhex, repr([minimal_position_unhex, filename_unhex])
 
 
 def is_delivered_psql(minimal_position, filename):
-    assert minimal_position.replace('/', '', 1).isalnum()
-    assert filename.isalnum()
+    assert minimal_position.replace('/', '', 1).isalnum(), repr(minimal_position)
+    assert filename.isalnum(), repr(filename)
     minimal_filename = subprocess.check_output([
         'psql',
         'postgres',
@@ -128,7 +128,7 @@ def is_delivered_psql(minimal_position, filename):
     ]).rstrip()
     logging.debug('worst sender @ %s', minimal_filename)
 
-    assert len(minimal_filename) == len(filename)
+    assert len(minimal_filename) == len(filename), repr([minimal_filename, filename])
     return minimal_filename > filename
 
 
