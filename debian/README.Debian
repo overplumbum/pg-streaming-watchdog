@@ -1,6 +1,7 @@
 General idea: http://habrahabr.ru/post/130704/
 
 Installation:
-	update /etc/pg_streaming_watchdog.ini with actual slaves list at least
-	add to your master postgresql.conf:
-		archive_command = '/usr/bin/pg_streaming_watchdog --archived-name %f --file %p --verbose'
+  update /etc/pg_streaming_watchdog.ini with actual slaves list at least
+  add to your master postgresql.conf:
+    archive_mode = on # requires server restart (reload is not sufficient)
+    archive_command = '/usr/bin/pg_streaming_watchdog --archived-name %f --file %p --verbose'
