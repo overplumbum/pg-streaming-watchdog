@@ -81,10 +81,11 @@ def get_senders():
 
         if title.startswith('postgres: wal sender process '):
             title = title.split(' ')
-            assert title[6] == 'streaming', repr(title)
+            if title[6] != 'streaming':
+              continue
 
             position = title[7]
-            assert len(position) <= len('1E/BA0000800'), repr(position)
+            assert len(position.split('/')) == 2, repr(position)
 
             # "192.168.1.4(21862)" or "[local]"
             remote = title[5]
